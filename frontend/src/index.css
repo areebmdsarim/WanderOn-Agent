@@ -348,6 +348,30 @@
   color: var(--accent) !important;
 }
 
+.text-success {
+  color: var(--success) !important;
+}
+
+.text-warning {
+  color: var(--warning) !important;
+}
+
+.text-error {
+  color: var(--error) !important;
+}
+
+.bg-success {
+  background-color: var(--success) !important;
+}
+
+.bg-warning {
+  background-color: var(--warning) !important;
+}
+
+.bg-error {
+  background-color: var(--error) !important;
+}
+
 .text-sm {
   font-size: 0.875rem !important;
 }

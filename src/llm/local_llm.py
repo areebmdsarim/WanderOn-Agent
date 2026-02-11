@@ -1,6 +1,6 @@
 """
-Local LLM wrapper around Ollama via langchain-ollama.
-All LLM inference goes through this module — no 3rd-party LLM calls.
+Handles talking to the local Ollama instance.
+Everything runs locally, no external API calls here.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ CONFIG_PATH = Path("configs/model_config.json")
 
 @lru_cache(maxsize=1)
 def load_model_config() -> dict:
-    """Load model configuration from JSON file."""
+    # grab model settings from the json file
     if not CONFIG_PATH.exists():
         logger.warning(f"Config file {CONFIG_PATH} not found. Using defaults.")
         return {}
@@ -41,15 +41,14 @@ def load_model_config() -> dict:
         return {}
 
 
-# Hardcoded System Defaults (Priority 3)
+# fallback defaults if config file is missing
 DEFAULT_CONFIGS = {
     "classifier": {
-        "model": "llama3.2:3b",
+        "model": "llama3.1:8b",
         "temperature": 0.1,
         "num_predict": 256,
         "top_p": 0.9,
         "top_k": 40,
-        "format": "json",
     },
     "generator": {
         "model": "llama3.1:8b",
@@ -64,10 +63,8 @@ DEFAULT_CONFIGS = {
 
 def resolve_param(role: str, key: str, override_val: Any) -> Any:
     """
-    Priority-based resolution for LLM parameters:
-    1. configs/model_config.json (Governance/Production control)
-    2. Runtime Overrides (e.g., API request LLMConfig)
-    3. Hardcoded DEFAULT_CONFIGS (Code-level safety)
+    Decide which param to use.
+    Order: json config > manual override > hardcoded defaults.
     """
     # 1. JSON (Admin governance)
     config = load_model_config()
@@ -103,7 +100,7 @@ def _get_llm_instance(
     top_k: int,
     format: str,
 ) -> OllamaLLM:
-    """Internal factory to create and cache the OllamaLLM instance."""
+    # creates the actual langchain object. caches it so we don't spam init.
     logger.info(
         f"Initialising Ollama LLM: model={model}, temp={temperature}, predict={num_predict}, format={format}"
     )
@@ -144,7 +141,7 @@ def _get_resolved_llm(role: str, config: Optional[LLMConfig] = None) -> OllamaLL
 
 
 def get_classifier_llm(config: Optional[LLMConfig] = None) -> OllamaLLM:
-    """Low-temperature instance for routing / classification."""
+    # low temp for routing bits
     return _get_resolved_llm("classifier", config)
 
 
@@ -179,5 +176,6 @@ def invoke_llm(llm: OllamaLLM, prompt: str) -> str:
 
         return generation.text.strip()
     except Exception as e:
-        logger.error(f"LLM invocation failed: {e}")
+        logger.error(f"LLM fail: {e}")
+        # TODO: maybe add retry logic here if it keeps failing?
         raise

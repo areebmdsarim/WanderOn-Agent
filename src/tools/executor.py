@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from src.llm.local_llm import get_classifier_llm, invoke_llm
 from src.llm.prompts import TOOL_EXTRACTION_PROMPT
-from src.schemas import ToolResponse
+from src.schemas import ToolResponse, LLMConfig
 from src.tools.travel_tools import TOOL_REGISTRY
 
 

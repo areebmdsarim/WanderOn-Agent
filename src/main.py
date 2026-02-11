@@ -125,20 +125,22 @@ async def handle_query(req: QueryRequest):
         guardrails_triggered.append(reason)
         _log(request_id, req, "OUT_OF_SCOPE", 0.0, reason, 0.0, guardrails_triggered)
         if "blocked_pii" in reason:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=400,
-                detail=ErrorResponse(
+                content=ErrorResponse(
                     error="blocked_pii",
                     message="Request contains sensitive personal data. Remove PII and retry.",
                     request_id=request_id,
+                    trace=trace,
                 ).model_dump(),
             )
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail=ErrorResponse(
+            content=ErrorResponse(
                 error=reason,
                 message=f"Input validation failed: {reason}",
                 request_id=request_id,
+                trace=trace,
             ).model_dump(),
         )
 
@@ -147,12 +149,13 @@ async def handle_query(req: QueryRequest):
         guardrails_triggered.append(reason)
         # Log the refusal before raising
         _log(request_id, req, "OUT_OF_SCOPE", 0.0, reason, 0.0, guardrails_triggered)
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail=ErrorResponse(
+            content=ErrorResponse(
                 error="token_budget_exceeded",
                 message=f"Request exceeds token budget. Please shorten your query. ({reason})",
                 request_id=request_id,
+                trace=trace,
             ).model_dump(),
         )
 

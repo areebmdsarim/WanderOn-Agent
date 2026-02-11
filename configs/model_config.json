@@ -1,11 +1,10 @@
 {
     "classifier": {
-        "model": "llama3.2:3b",
+        "model": "llama3.1:8b",
         "temperature": 0.1,
         "top_p": 0.9,
         "top_k": 40,
-        "num_predict": 256,
-        "format": "json"
+        "num_predict": 256
     },
     "generator": {
         "model": "llama3.1:8b",

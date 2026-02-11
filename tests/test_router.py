@@ -4,7 +4,7 @@ Tests for the query router (rule-based + LLM parsing).
 
 import pytest
 
-from src.router import _apply_rules, _parse_llm_routing, classify_query
+from src.router import check_static_rules, _parse_llm_routing, classify_query
 from src.schemas import QueryRoute, RoutingDecision
 
 
@@ -28,7 +28,7 @@ class TestRuleBasedRouting:
         ],
     )
     def test_greetings_route_to_small_talk(self, query):
-        result = _apply_rules(query)
+        result = check_static_rules(query)
         assert result is not None
         assert result.route == QueryRoute.SMALL_TALK
         assert result.confidence > 0.9
@@ -42,7 +42,7 @@ class TestRuleBasedRouting:
         ],
     )
     def test_booking_routes_to_out_of_scope(self, query):
-        result = _apply_rules(query)
+        result = check_static_rules(query)
         assert result is not None
         assert result.route == QueryRoute.OUT_OF_SCOPE
         assert result.confidence > 0.9
@@ -57,13 +57,13 @@ class TestRuleBasedRouting:
         ],
     )
     def test_structured_keywords_detected(self, query):
-        result = _apply_rules(query)
+        result = check_static_rules(query)
         assert result is not None
         assert result.route == QueryRoute.STRUCTURED_DATA
         assert result.confidence > 0.85
 
     def test_ambiguous_query_returns_none(self):
-        result = _apply_rules("Tell me about the company policies on travel")
+        result = check_static_rules("Tell me about the company policies on travel")
         assert result is None  # Should fall through to LLM
 
 

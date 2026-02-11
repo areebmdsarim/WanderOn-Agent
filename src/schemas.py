@@ -1,5 +1,5 @@
 """
-Pydantic v2 schemas for all request/response contracts in the AI Travel Router.
+Pydantic schemas for the AI Travel Router.
 """
 
 from __future__ import annotations
@@ -12,11 +12,11 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-# ── Routing ──────────────────────────────────────────────────────────────────
+# --- Routing --- #
 
 
 class QueryRoute(str, Enum):
-    """The four canonical route categories."""
+    """Basic route categories."""
 
     SMALL_TALK = "SMALL_TALK"
     FACT_FROM_DOCS = "FACT_FROM_DOCS"
@@ -25,18 +25,18 @@ class QueryRoute(str, Enum):
 
 
 class RoutingDecision(BaseModel):
-    """Output of the query router (rules or LLM)."""
+    """What the router decided."""
 
     route: QueryRoute
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str
 
 
-# ── API request / response ───────────────────────────────────────────────────
+# --- API request / response --- #
 
 
 class LLMConfig(BaseModel):
-    """Dynamic configuration for LLM parameter tuning."""
+    """LLM params you can tune."""
 
     model: str | None = None
     temperature: float = 0.7  # simple default, no Field()
@@ -76,7 +76,7 @@ class ThinkingStep(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    """Unified API response sent for every query."""
+    """Standard response for all queries."""
 
     ok: bool = True
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -100,9 +100,10 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    trace: List[ThinkingStep] = Field(default_factory=list)
 
 
-# ── Tool schemas ─────────────────────────────────────────────────────────────
+# --- Tool schemas --- #
 
 
 class VisaCheckRequest(BaseModel):
@@ -112,7 +113,7 @@ class VisaCheckRequest(BaseModel):
 
 class PerDiemRequest(BaseModel):
     city: str = Field(..., min_length=1, max_length=100)
-    country: str = Field(..., min_length=2, max_length=56)
+    country: Optional[str] = Field(None, min_length=2, max_length=56)
 
 
 class FlightPolicyRequest(BaseModel):
@@ -127,7 +128,7 @@ class ApprovalRequest(BaseModel):
 
 
 class ToolResponse(BaseModel):
-    """Wrapper returned by every tool function."""
+    """Schema for tool outputs."""
 
     ok: bool = True
     tool: str
@@ -138,7 +139,7 @@ class ToolResponse(BaseModel):
     )
 
 
-# ── Feedback ─────────────────────────────────────────────────────────────────
+# --- Feedback --- #
 
 
 class FeedbackRequest(BaseModel):
@@ -156,7 +157,7 @@ class FeedbackRecord(BaseModel):
     comment: Optional[str] = None
 
 
-# ── Observability ────────────────────────────────────────────────────────────
+# --- Observability --- #
 
 
 class QueryLog(BaseModel):

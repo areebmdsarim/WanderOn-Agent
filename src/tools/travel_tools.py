@@ -1,8 +1,7 @@
 """
-Structured data tools — allow-listed, schema-validated functions.
-
-These return deterministic data (simulated databases / lookup tables).
-All inputs are validated via Pydantic before execution.
+Lookup tools for things like visa info and per diem rates.
+These use mock data / local databases.
+Inputs get validated with Pydantic first.
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ from src.schemas import (
 )
 
 
-# ── Lookup data (simulated databases) ───────────────────────────────────────
+# --- Lookup data (simulated databases) --- #
 
 _VISA_DB: Dict[str, Dict[str, Any]] = {
     ("india", "united kingdom"): {
@@ -134,7 +133,7 @@ _APPROVAL_THRESHOLDS = {
 }
 
 
-# ── Tool functions ───────────────────────────────────────────────────────────
+# --- Tool functions --- #
 
 
 def check_visa_requirements(req: VisaCheckRequest) -> ToolResponse:
@@ -143,17 +142,47 @@ def check_visa_requirements(req: VisaCheckRequest) -> ToolResponse:
     if data is None:
         data = {
             "requires_visa": True,
-            "notes": f"No specific data for {req.passport_country} → {req.destination_country}. "
-            "Please check with the embassy or consulate directly.",
+            "notes": f"Couldn't find specific visa info for {req.passport_country} to {req.destination_country}. "
+            "Suggest checking with the embassy or consulate directly.",
         }
     return ToolResponse(tool="check_visa_requirements", data=data, source="visa-db-v1")
 
 
 def get_per_diem_rate(req: PerDiemRequest) -> ToolResponse:
-    key = (req.city.lower(), req.country.lower())
-    data = _PER_DIEM_DB.get(key)
+    target_city = req.city.lower()
+
+    # Direct lookup if country is provided and valid
+    valid_country = req.country and req.country.lower() not in [
+        "<unknown>",
+        "unknown",
+        "none",
+        "n/a",
+        "null",
+        "",
+    ]
+
+    if valid_country:
+        key = (target_city, req.country.lower())
+        data = _PER_DIEM_DB.get(key)
+    else:
+        # Fuzzy lookup: find city in DB (assuming unique cities for now)
+        data = None
+        for (city, country), info in _PER_DIEM_DB.items():
+            if city == target_city:
+                # IMPORTANT: use a copy to avoid mutating the DB record
+                data = info.copy()
+                # Add country to data for clarity
+                data = {**data, "country": country.title(), "inferred": True}
+                break
+
     if data is None:
-        data = {"error": f"No per-diem data for {req.city}, {req.country}."}
+        country_str = (
+            f", {req.country}"
+            if req.country and req.country.lower() != "<unknown>"
+            else ""
+        )
+        data = {"error": f"No per-diem data found for {req.city}{country_str}."}
+
     return ToolResponse(tool="get_per_diem_rate", data=data, source="per-diem-db-v1")
 
 
@@ -206,7 +235,7 @@ def get_approval_requirements(req: ApprovalRequest) -> ToolResponse:
     )
 
 
-# ── Allow-list registry ─────────────────────────────────────────────────────
+# --- Allow-list registry --- #
 
 TOOL_REGISTRY: Dict[str, Any] = {
     "check_visa_requirements": {

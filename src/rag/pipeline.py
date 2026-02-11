@@ -46,6 +46,7 @@ def run_rag_pipeline(
             "I don't have enough information in the travel policies to answer that.",
             [],
             False,
+            "No relevant documents found in knowledge base",
         )
 
     # Build context string

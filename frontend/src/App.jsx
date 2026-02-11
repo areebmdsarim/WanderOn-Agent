@@ -33,9 +33,19 @@ function App() {
         body: JSON.stringify({ query, config }),
       });
 
-      if (!res.ok) throw new Error('API request failed');
-
       const data = await res.json();
+
+      if (!res.ok) {
+        setResponse(data);
+        setHistory(prev => [...prev, {
+          role: 'assistant',
+          content: data.message || `Error: ${res.statusText}`,
+          isError: true,
+          data: data
+        }]);
+        return;
+      }
+
       setResponse(data);
       setHistory(prev => [...prev, { role: 'assistant', content: data.answer, data }]);
     } catch (err) {
