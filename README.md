@@ -50,8 +50,6 @@ User Query
 # 1. Install Ollama model
 ollama pull llama3.1:8b
 
-cd ai-travel-router
-
 # 2. Install Python dependencies
 pip install -r requirements.txt
 
