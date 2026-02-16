@@ -66,9 +66,11 @@ def resolve_param(role: str, key: str, override_val: Any) -> Any:
     Decide which param to use.
     Order: json config > manual override > hardcoded defaults.
     """
-    # 1. JSON (Admin governance)
+    # 1. JSON (Admin governance) - read from "local" section
     config = load_model_config()
-    role_config = config.get(role, {})
+    # Get the local/Ollama backend section
+    backend_config = config.get("local", {})
+    role_config = backend_config.get(role, {})
     val = role_config.get(key)
     if val is not None:
         return val
@@ -177,5 +179,4 @@ def invoke_llm(llm: OllamaLLM, prompt: str) -> str:
         return generation.text.strip()
     except Exception as e:
         logger.error(f"LLM fail: {e}")
-        # TODO: maybe add retry logic here if it keeps failing?
         raise

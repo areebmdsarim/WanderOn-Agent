@@ -5,11 +5,18 @@ is fully supported by the retrieved context.
 
 from __future__ import annotations
 
+import os
 from typing import Optional, Tuple
 
 from loguru import logger
 
-from src.llm.local_llm import get_classifier_llm, invoke_llm
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import get_classifier_llm, invoke_llm
+else:
+    from src.llm.local_llm import get_classifier_llm, invoke_llm
+
 from src.llm.prompts import GROUNDEDNESS_PROMPT
 from src.schemas import LLMConfig
 

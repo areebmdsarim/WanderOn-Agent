@@ -52,6 +52,7 @@ class QueryRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=10000)
     user_id: Optional[str] = None
+    thread_id: Optional[str] = None
     config: Optional[LLMConfig] = None
 
 
@@ -80,6 +81,7 @@ class QueryResponse(BaseModel):
 
     ok: bool = True
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    thread_id: str = ""
     route: QueryRoute
     confidence: float = Field(ge=0.0, le=1.0)
     answer: str

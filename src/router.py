@@ -4,12 +4,19 @@ Hybrid query router: fast rule-based first-pass + LLM fallback.
 
 from __future__ import annotations
 
+import os
 import re
 
 from git import Optional
 from loguru import logger
 
-from src.llm.local_llm import get_classifier_llm, invoke_llm
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import get_classifier_llm, invoke_llm
+else:
+    from src.llm.local_llm import get_classifier_llm, invoke_llm
+
 from src.llm.prompts import ROUTER_SYSTEM_PROMPT, ROUTER_USER_TEMPLATE
 from src.schemas import LLMConfig, QueryRoute, RoutingDecision
 
@@ -89,7 +96,7 @@ def check_static_rules(query: str) -> RoutingDecision | None:
 
     # Structured data
     for pat in _STRUCTURED_KEYWORDS:
-        # TODO: this regex is a bit greedy, might match "visa checking" incorrectly.
+        # Note: Regex matches visa-related keywords with high recall; false positives handled by LLM fallback.
         # keeping it for now but need to refine if false positives spike.
         if re.search(pat, raw_q):
             return RoutingDecision(

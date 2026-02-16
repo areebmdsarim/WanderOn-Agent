@@ -5,13 +5,20 @@ Uses the LLM to extract parameters from natural-language queries.
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any, Dict, Optional, Tuple
 
 from loguru import logger
 from pydantic import ValidationError
 
-from src.llm.local_llm import get_classifier_llm, invoke_llm
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import get_classifier_llm, invoke_llm
+else:
+    from src.llm.local_llm import get_classifier_llm, invoke_llm
+
 from src.llm.prompts import TOOL_EXTRACTION_PROMPT
 from src.schemas import ToolResponse, LLMConfig
 from src.tools.travel_tools import TOOL_REGISTRY

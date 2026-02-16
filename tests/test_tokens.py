@@ -1,6 +1,13 @@
+import os
 from fastapi.testclient import TestClient
 from src.main import app
-from src.llm.local_llm import token_counter
+
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import token_counter
+else:
+    from src.llm.local_llm import token_counter
 
 client = TestClient(app)
 

@@ -1,17 +1,31 @@
 {
-    "classifier": {
-        "model": "llama3.1:8b",
-        "temperature": 0.1,
-        "top_p": 0.9,
-        "top_k": 40,
-        "num_predict": 256
+    "openai": {
+        "classifier": {
+            "model": "gpt-4o-mini",
+            "temperature": 0.1,
+            "max_tokens": 256
+        },
+        "generator": {
+            "model": "gpt-4o-mini",
+            "temperature": 0.3,
+            "max_tokens": 1024
+        }
     },
-    "generator": {
-        "model": "llama3.1:8b",
-        "temperature": 0.3,
-        "top_p": 0.9,
-        "top_k": 40,
-        "num_predict": 1024,
-        "format": ""
+    "local": {
+        "classifier": {
+            "model": "llama3.1:8b",
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "top_k": 40,
+            "num_predict": 256
+        },
+        "generator": {
+            "model": "llama3.1:8b",
+            "temperature": 0.3,
+            "top_p": 0.9,
+            "top_k": 40,
+            "num_predict": 1024,
+            "format": ""
+        }
     }
 }

@@ -25,14 +25,27 @@ from src.guardrails.input_guards import (
     InputGuardrails,
     TokenBudgetGuardrail,
 )
+from src.llm.thread_manager import get_thread_manager
 from src.observability.logging import log_query, save_feedback
 from src.rag.pipeline import get_retriever, run_rag_pipeline
-from src.llm.local_llm import (
-    get_generator_llm,
-    get_total_tokens,
-    invoke_llm,
-    reset_token_counter,
-)
+
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import (
+        get_generator_llm,
+        get_total_tokens,
+        invoke_llm,
+        reset_token_counter,
+    )
+else:
+    from src.llm.local_llm import (
+        get_generator_llm,
+        get_total_tokens,
+        invoke_llm,
+        reset_token_counter,
+    )
+
 from src.router import classify_query
 from src.schemas import (
     ErrorResponse,
@@ -72,8 +85,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    # FIXME: this is wide open for dev. lock this down before prod!
-    allow_origins=["*"],  # For dev, allow all. In production, restrict to frontend URL.
+    # NOTE: In production, restrict to specific frontend URL instead of "*"
+    allow_origins=["*"],  # Allow all for development, restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -108,8 +121,12 @@ async def handle_query(req: QueryRequest):
     start = time.perf_counter()
     reset_token_counter()
     trace: list[ThinkingStep] = []
-    # print(f"DEBUG: trace has {len(trace)} steps") # remove later
     guardrails_triggered: list[str] = []
+
+    # Initialize or retrieve conversation thread
+    tm = get_thread_manager()
+    thread_id = req.thread_id or tm.create_thread(user_id=req.user_id or "default")
+    tm.add_message(thread_id, "user", req.query)
 
     # 1. Input guardrails
     ok, reason = _input_guard.check(req.query)
@@ -222,8 +239,17 @@ async def handle_query(req: QueryRequest):
         )
 
     elif decision.route == QueryRoute.FACT_FROM_DOCS:
+        # Build context from conversation history
+        prev_messages = tm.get_thread_messages(thread_id)
+        context = ""
+        if len(prev_messages) > 1:
+            context = "\n\nPrevious conversation:\n"
+            for msg in prev_messages[:-1]:  # Exclude current message
+                context += f"{msg['role'].upper()}: {msg['content']}\n"
+            context += "\n"
+        
         answer, sources, groundedness, explanation = run_rag_pipeline(
-            req.query, req.config
+            context + req.query if context else req.query, req.config
         )
         trace.append(
             ThinkingStep(
@@ -239,6 +265,15 @@ async def handle_query(req: QueryRequest):
         )
 
     elif decision.route == QueryRoute.STRUCTURED_DATA:
+        # Build context from conversation history
+        prev_messages = tm.get_thread_messages(thread_id)
+        context = ""
+        if len(prev_messages) > 1:
+            context = "Previous context:\n"
+            for msg in prev_messages[:-1]:
+                context += f"{msg['role'].upper()}: {msg['content']}\n"
+            context += "\n"
+        
         tool_result, error = execute_tool(req.query, req.config)
         if error:
             answer = f"I couldn't process that structured request: {error}"
@@ -256,7 +291,7 @@ async def handle_query(req: QueryRequest):
             # Synthesize natural language response
             llm = get_generator_llm(req.config)
             prompt = (
-                f'You are a helpful travel assistant. The user asked: "{req.query}"\n'
+                f'{context}You are a helpful travel assistant. The user asked: "{req.query}"\n'
                 f"The tool '{tool_used}' returned the following data:\n{tool_data}\n\n"
                 "Please provide a natural language answer summarizing this information for the user."
             )
@@ -285,12 +320,16 @@ async def handle_query(req: QueryRequest):
             )
         )
 
+    # Add assistant response to thread
+    tm.add_message(thread_id, "assistant", answer)
+
     elapsed_ms = (time.perf_counter() - start) * 1000
     total_tokens = get_total_tokens()
 
     # 5. Build response
     response = QueryResponse(
         request_id=request_id,
+        thread_id=thread_id,
         route=decision.route,
         confidence=decision.confidence,
         answer=answer,

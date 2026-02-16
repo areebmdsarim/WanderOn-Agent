@@ -4,11 +4,18 @@ Full RAG pipeline: retrieve → generate → verify groundedness.
 
 from __future__ import annotations
 
+import os
 from typing import Dict, List, Optional, Tuple
 
 from loguru import logger
 
-from src.llm.local_llm import get_generator_llm, invoke_llm
+# Dynamically select LLM backend based on environment variable
+_LLM_BACKEND = os.getenv("LLM_BACKEND", "local").lower()
+if _LLM_BACKEND == "openai":
+    from src.llm.openai_llm import get_generator_llm, invoke_llm
+else:
+    from src.llm.local_llm import get_generator_llm, invoke_llm
+
 from src.llm.prompts import RAG_ANSWER_PROMPT
 from src.rag.groundedness import check_groundedness
 from src.rag.retriever import FAISSRetriever

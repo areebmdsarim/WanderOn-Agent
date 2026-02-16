@@ -46,10 +46,12 @@ The real insight here: **Knowing when NOT to use the LLM is more important than 
 
 ### Prerequisites
 - Python 3.10+
-- [Ollama](https://ollama.com) installed and running
-- ~2GB disk for the llama3.1:8b model
 
-### Setup
+**LLM Backend Options:**
+- **Local (Default):** [Ollama](https://ollama.com) with llama3.1:8b (~2GB disk)
+- **Cloud:** OpenAI API key (gpt-4o-mini)
+
+### Quick Start (Local LLM)
 
 ```bash
 # 1. Pull the LLM (one-time)
@@ -69,8 +71,21 @@ uvicorn src.main:app --reload
 
 # 6. Start the frontend (another terminal)
 cd frontend && npm install && npm run dev
-# Backend: http://localhost:8000
-# Frontend: http://localhost:5173
+```
+
+**Backend:** http://localhost:8000 | **Frontend:** http://localhost:5173
+
+### Using OpenAI Backend
+
+```bash
+# Set environment variable
+export LLM_BACKEND=openai
+
+# Add your API key to .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+
+# Then run same commands as above
+uvicorn src.main:app --reload
 ```
 
 ### Test
