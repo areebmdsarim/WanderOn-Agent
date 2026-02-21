@@ -1,8 +1,8 @@
-# WanderOn AI Travel Router
+# AI Travel Router
 
 ## The Problem
 
-Most AI systems answer every question the same way: throw it at an LLM and hope. No thinking, no judgment, just generation.
+Most AI systems answer every question the same way: throw it at an LLM and hope—no thinking, no judgment, just generation.
 
 Production systems need something different. They need to **decide HOW to answer before generating anything.** Should this use the knowledge base? A tool? Just return "no"? That judgment layer is missing from most AI.
 
