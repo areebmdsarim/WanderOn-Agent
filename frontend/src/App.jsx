@@ -63,7 +63,7 @@ function App() {
         <div className="p-8 border-b border-glass">
           <div className="flex items-center gap-3 mb-1">
             <MapPin className="text-primary" size={24} />
-            <h1 className="text-xl font-bold tracking-tight text-white">WanderOn</h1>
+            <h1 className="text-xl font-bold tracking-tight text-white">AITravelRouter</h1>
           </div>
           <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-bold ml-1">Travel Logic Engine</p>
         </div>
@@ -185,7 +185,7 @@ function App() {
               color: 'rgba(206, 202, 202, 0.6)',
               textAlign: 'center',
             }}>
-              Powered by local LLM • Grounded in FAISS Vector Store • WanderOn Agent v1.0
+              Powered by local LLM • Grounded in FAISS Vector Store • Agent v1.0
             </p>
 
             {/* Thinking Trace repositioned here to match input width */}
